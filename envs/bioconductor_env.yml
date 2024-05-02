@@ -1,0 +1,6 @@
+channels:
+- bioconda
+
+dependencies:
+- bioconductor-deseq2=1.42.0
+- bioconductor-fgsea=1.28.0
