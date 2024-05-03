@@ -1,0 +1,13 @@
+name,srr,condition,replicate,read,orig_srr
+CTLrep1_R1.fastq.gz,,CTL,rep1,R1,
+CTLrep1_R2.fastq.gz,,CTL,rep1,R2,
+CTLrep2_R1.fastq.gz,,CTL,rep2,R1,
+CTLrep2_R2.fastq.gz,,CTL,rep2,R2,
+CTLrep3_R1.fastq.gz,,CTL,rep3,R1,
+CTLrep3_R2.fastq.gz,,CTL,rep3,R2,
+KOrep1_R1.fastq.gz,,KO,rep1,R1,
+KOrep1_R2.fastq.gz,,KO,rep1,R2,
+KOrep2_R1.fastq.gz,,KO,rep2,R1,
+KOrep2_R2.fastq.gz,,KO,rep2,R2,
+KOrep3_R1.fastq.gz,,KO,rep3,R1,
+KOrep3_R2.fastq.gz,,KO,rep3,R2,
