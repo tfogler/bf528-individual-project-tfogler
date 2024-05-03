@@ -1,0 +1,38 @@
+---
+title: "RNA-Seq Project Report"
+author: '@tfogler'
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Report
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Discussion
+
+**Remarks on the quality of sequencing reads:**
+
+- Reads are kinda alright
+- Only problems are the base sequence content and sequence duplication levels
+  * sequence duplication is more worrisome since it could mean enrichment bias
+  * on avg %s of reads after deduplication is 25%
+  * a majority >50% also are duplicated 10x or more
+  * base sequence content varies most at beginning of read
+
+
+## Methods
+
+First, mRNAseq samples were obtained corresponding to the wild-type/control (CTL) and knockout (KO) conditions, 3 CTL and 3 KO. To ensure data quality, we performed initial quality control using FastQC v0.12.1.
+Next, we aligned the reads to the gencode human primary assembly genome (GRCh38, release 45) using STAR v2.7.11b with default parameters.
+From these alignments, we generated gene counts using VERSE v0.1.5 and the gencode 45 primary assembly GTF.
+After combining the counts from all 6 samples, we filtered out genes with zero counts. Then, we performed normalization and differential expression analysis using DESeq2 v1.42.1, comparing the two conditions.
+Finally, we performed a functional gene set enrichment analysis using FGSEA v1.28.0 to find functions associated with differentially expressed genes.
+
+```{r}
+
+```
+
+
