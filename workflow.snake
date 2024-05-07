@@ -28,3 +28,5 @@ rule fastqc:
 		'''
 		fastqc {input} -o {params.outdir}
 		'''
+
+rule 
