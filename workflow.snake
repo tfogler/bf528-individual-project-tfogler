@@ -11,14 +11,15 @@ rule all:
 		 condition = CONDITIONS,
 		 rep = REPS,
 		 read = READS
-		)
+		),
+		'results/multiqc_report.html'
 
 	
 rule fastqc:
 	input:
-		'materials/{condition}{rep}_{read}.fastq.gz'
+		'materials/{condition}rep{rep}_{read}.fastq.gz'
 	output:
-		'results/{condition}{rep}_{read}_fastqc.html'
+		'results/{condition}rep{rep}_{read}_fastqc.html'
 	params:
 		outdir = 'results/'
 	threads: 4
@@ -29,4 +30,15 @@ rule fastqc:
 		fastqc {input} -o {params.outdir}
 		'''
 
-rule 
+rule multiqc:
+	input:
+		html='results/{condition}rep{rep}_fastqc.html',
+		zip='results/{sample}rep{re}_fastqc.zip'
+	output:
+		multiqc = 'results/multiqc_report.html'
+	params:
+		outdir = 'results/'
+	shell:
+		'''
+		multiqc results/ -o {params.outdir}
+		'''
