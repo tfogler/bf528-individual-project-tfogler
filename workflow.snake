@@ -12,9 +12,9 @@ rule all:
 		 rep = REPS,
 		 read = READS
 		),
-		'results/multiqc_report.html'
-#		expand("results/{condition}_{rep}.aligned.bam", condition=CONDITIONS, rep=REPS),
-#		expand("results/{condition}_{rep}_flagstats.txt", condition=CONDITIONS, rep=REPS)
+		'results/multiqc_report.html',
+		expand("results/{condition}_{rep}.aligned.bam", condition=CONDITIONS, rep=REPS),
+		expand("results/{condition}_{rep}_flagstats.txt", condition=CONDITIONS, rep=REPS)
 
 	
 rule fastqc:
@@ -61,106 +61,7 @@ rule get_GRCh38:
 		"materials/GRCh38.fa.gz"
 	shell:
 		'''
-		wget -O {output} https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/GRCh38.primary_assembly.genome.fa.gz"
-		'''
-
-## Rule to download GRCh38 GTF file
-#rule get_GRCh38_gtf:
-#	output:
-#		"materials/GRCh38.gtf.gz"
-#	params:
-#		ftp_path = "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.primary_assembly.annotation.gtf.gz"
-#	shell:
-#		'''
-#		wget -p {output} {params.ftp_path}
-#		'''
-#
-## rule to unzip gtf and fa
-#rule unzip:
-#	input:
-#		gtf = 'materials/GRCh38.gtf.gz',
-#		fa = 'materials/GRCh38.fa.gz'
-#	output:
-#		gtf = 'materials/GRCh38.gtf'
-#		fa = 'materials/GRCh38.fa'
-#	shell:
-#		'''
-#		gunzip -c {input.gtf} > {output.gtf}
-#		gunzip -c {input.fa} > {output.gtf}
-#		'''
-#
-## rule to build STAR index
-#rule star_build:
-#	input:
-#	output:
-#		Genome_index="results/GRCh38_star"
-#	params:
-#	conda:
-#		'envs/star_env.yml'
-#	threads: 16
-#	shell:
-#		'''
-#		'''
-#
-## Rule to perform STAR alignment
-#rule star_align:
-#	input:
-#		fastq1="materials/{condition}rep{rep}_R1.fastq.gz",
-#		fastq2="materials/{condition}rep{rep}_R2.fastq.gz",
-#		Genome_params="results/GRCh38_star/genomeParameters.txt";
-#	output:
-#		bam="results/{condition}rep{rep}.Aligned.bam"
-#	params:
-#		Genome_index="results/GRCh38_star"
-#		outdir="results/{condition}{rep}/"
-#	conda:
-#		'envs/star_env.yml'
-#	shell:
-#		"""
-#		STAR --genomeDir {params.Genome_index} --readFilesIn {input.fastq1} {input.fastq2} --readFilesCommand zcat --outSAMtype BAM Unsorted --outFileNamePrefix {params.outdir}
-#		"""
-
-rule bowtie2_build_gencode:
-	input:
-		fa = 'materials/GRCh38.fa.gz'
-	output:
-		bt2='results/GRCh38_bt2/GRCh38.1.bt2'
-	params:
-		index_dir = 'results/GRCh38_bt2/'
-	threads: 16
-	conda:
-		'envs/bowtie2_env.yml'
-	shell:
-		'''
-		# create a dir for the index if doesn't exist
-		dir={params.index_dir}
-
-		if [[ ! -e $dir ]]; then
-				mkdir $dir
-		fi
-		
-		# build index with defaults
-		bowtie2-build -f {input.fa} {params.index_dir}
-
-		echo 'Bowtie2 Index Built'
-		'''
-
-rule bowtie2_align:
-	input:
-		fastq1='materials/{condition}rep{rep}_R1.fastq.gz',
-		fastq2='materials/{condition}rep{rep}_R2.fastq.gz',
-		index = 'results/GRCh38_bt2'
-	output:
-		'results/{condition}_rep{rep}.bam'
-	threads: 16
-	params:
-		index = 'results/GRCh38_bt2'
-	conda:
-		'envs/bowtie2_env.yml'
-	shell:
-		'''
-		bowtie2 -x {params.index} -1 {input.fastq1} -2 {input.fastq2} | 
-		samtools view -b > {output}
+		wget -O {output} https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/GRCh38.primary_assembly.genome.fa.gz
 		'''
 
 # we wan to sort the alignments from bowtie2_align
@@ -175,6 +76,39 @@ rule samtools_sort:
 		'''
 		samtools sort {input} -o {output}
 		rm {input}
+		'''
+
+# Define the rule for building HISAT2 index from the human genome FASTA file
+rule build_hisat_index:
+	input:
+		fasta = 'materials/GRCh38.fa'  # Path to human genome FASTA file
+	output:
+		hisat_index = "results/GRCh38_hs2"  # Output path for the HISAT2 index
+	conda:
+		'envs/hisat2_env.yml'
+	threads: 16
+	shell:
+		'''
+		hisat2-build {input.fasta} {output.hisat_index}
+		'''
+
+# Define the rule for aligning paired-end FASTQ files to the HISAT2 index
+rule align_reads:
+	input:
+		index_prefix = "results/GRCh38_hs2",  # Prefix of the HISAT2 index
+		fastq1='materials/{condition}rep{rep}_R1.fastq.gz', # Path to fwd reads
+		fastq2='materials/{condition}rep{rep}_R2.fastq.gz' # Path to rvs reads
+	output:
+		bam_file = "results/{condition}_rep{rep}.bam"  # Output path for the aligned BAM file
+	conda:
+		'envs/hisat2_env.yml'
+	threads: 16
+	shell:
+		'''
+		hisat2 -x {input.index_prefix} \
+			   -1 {input.fastq1} \
+			   -2 {input.fastq2} \
+		| samtools view -b > {output.bam_file}
 		'''
 
 # Rule to generate flagstat from aligned BAM files using samtools
