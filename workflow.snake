@@ -15,8 +15,9 @@ rule all:
 		'results/multiqc_report.html',
 		expand("results/{condition}_{rep}.aligned.bam", condition=CONDITIONS, rep=REPS),
 		expand("results/{condition}_{rep}_flagstats.txt", condition=CONDITIONS, rep=REPS),
-		expand("materials/{condition}{rep}_{reads}.fastq.gz", condition=CONDITIONS, rep=REPS, reads=READS)
-
+		expand("materials/{condition}{rep}_{reads}.fastq.gz", condition=CONDITIONS, rep=REPS,
+		 reads=READS),
+		"materials/GRCh38.gtf"
 
 	
 rule fastqc:
@@ -75,6 +76,25 @@ rule unzip_fasta:
 	shell:
 		'''
 		gunzip -c {input.gz} > {output.fa}
+		'''
+# Rule to download GRCh38 GTF annotation file
+rule get_GRCh38_gtf:
+	output:
+		"materials/GRCh38.gtf.gz"
+	shell:
+		'''
+		ftp_path = "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.primary_assembly.annotation.gtf.gz"
+		'''
+
+# rule to unzip the genome GTF annotation file
+rule unzip_gtf:
+	input:
+		gz="materials/GRCh38.gtf.gz"
+	output:
+		gtf="materials/GRCh38.gtf"
+	shell:
+		'''
+		gunzip -c {input.gz} > {output.gtf}
 		'''
 
 # we want to sort the alignments from bowtie2_align
