@@ -64,7 +64,18 @@ rule get_GRCh38:
 		wget -O {output} https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/GRCh38.primary_assembly.genome.fa.gz
 		'''
 
-# we wan to sort the alignments from bowtie2_align
+# rule to unzip the genome FASTA file
+rule unzip_fasta:
+	input:
+		gz="materials/GRCh38.fa.gz"
+	output:
+		fa="materials/GRCh38.fa"
+	shell:
+		'''
+		gunzip -c {input.gz} > {output.fa}
+		'''
+
+# we want to sort the alignments from bowtie2_align
 rule samtools_sort:
 	input:
 		'results/{condition}_{rep}.bam'
@@ -83,13 +94,15 @@ rule build_hisat_index:
 	input:
 		fasta = 'materials/GRCh38.fa'  # Path to human genome FASTA file
 	output:
-		hisat_index = "results/GRCh38_hs2"  # Output path for the HISAT2 index
+		hisat_index = "results/GRCh38_hs2/GRCh38.1.ht2",  # Output file for the HISAT2 index
+		hisat_index_dir = directory("results/GRCh38_hs2")  # Output directory for the HISAT2 index
 	conda:
 		'envs/hisat2_env.yml'
 	threads: 16
 	shell:
 		'''
-		hisat2-build {input.fasta} {output.hisat_index}
+		mkdir -p {output.hisat_index_dir}
+		hisat2-build -f {input.fasta} {output.hisat_index_dir}/GRCh38
 		'''
 
 # Define the rule for aligning paired-end FASTQ files to the HISAT2 index
