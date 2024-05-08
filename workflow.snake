@@ -14,7 +14,9 @@ rule all:
 		),
 		'results/multiqc_report.html',
 		expand("results/{condition}_{rep}.aligned.bam", condition=CONDITIONS, rep=REPS),
-		expand("results/{condition}_{rep}_flagstats.txt", condition=CONDITIONS, rep=REPS)
+		expand("results/{condition}_{rep}_flagstats.txt", condition=CONDITIONS, rep=REPS),
+		expand("materials/{condition}{rep}_{reads}.fastq.gz", condition=CONDITIONS, rep=REPS, reads=READS)
+
 
 	
 rule fastqc:
@@ -109,7 +111,7 @@ rule build_hisat_index:
 # Define the rule for aligning paired-end FASTQ files to the HISAT2 index
 rule align_reads:
 	input:
-		hisat_index_file = "results/GRCh38.1.hs2", # File of the HISAT2 index
+		hisat_index_file = "results/GRCh38.1.ht2", # File of the HISAT2 index
 		fastq1='materials/{condition}rep{rep}_R1.fastq.gz', # Path to fwd reads
 		fastq2='materials/{condition}rep{rep}_R2.fastq.gz' # Path to rvs reads
 	output:
