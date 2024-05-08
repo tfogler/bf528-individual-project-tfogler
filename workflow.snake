@@ -17,7 +17,8 @@ rule all:
 		expand("results/{condition}_{rep}_flagstats.txt", condition=CONDITIONS, rep=REPS),
 		expand("materials/{condition}{rep}_{reads}.fastq.gz", condition=CONDITIONS, rep=REPS,
 		 reads=READS),
-		"materials/GRCh38.gtf"
+		"materials/GRCh38.gtf",
+		"verse_counts.tsv"
 
 	
 rule fastqc:
@@ -172,7 +173,7 @@ rule generate_counts_with_verse:
 		"envs/verse_env.yml"
 	shell:
 		"""
-		verse quant -a {input.annotation} -o {output.tsv_file} -t transcriptome \
+		verse quant -a {input.gtf} -o {output.tsv_file} -t transcriptome \
 			-s gene_id -i {input.bam_file}
 		"""
 
