@@ -173,8 +173,8 @@ rule generate_counts_with_verse:
 		"envs/verse_env.yml"
 	shell:
 		"""
-		verse quant -a {input.gtf} -o {output.tsv_file} -t transcriptome \
-			-s gene_id -i {input.bam_file}
+		verse quant -a {input.gtf} -o {output.tsv_file} -z 0 \
+			-t exon -g gene_id  {input.bam_file}
 		"""
 
 # Rule to combine all count files into one output file
@@ -187,16 +187,20 @@ rule combine_verse_counts:
 	output:
 		combined_counts = "verse_counts.tsv"  # Output path for the combined counts file
 	run:
-		# Create an empty list to store DataFrames
+		# Create an empty list to store DataFrames and sample names
 		dfs = []
+		headers = []
 		
 		# Iterate through input count files and read them into DataFrames
 		for count_file in input.count_files:
+			header = count_file.rstrip('_counts.tsv')
+			headers.append(header)
 			df = pd.read_csv(count_file, sep="\t", index_col=0)
 			dfs.append(df)
 		
 		# Concatenate all DataFrames along the columns (axis=1)
 		combined_df = pd.concat(dfs, axis=1, join="outer")
+		combined_df.columns = headers
 		
 		# Write the combined DataFrame to the output file
 		combined_df.to_csv(output.combined_counts, sep="\t")
