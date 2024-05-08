@@ -13,6 +13,8 @@ rule all:
 		 read = READS
 		),
 		'results/multiqc_report.html'
+#		expand("results/{condition}_{rep}.aligned.bam", condition=CONDITIONS, rep=REPS),
+#		expand("results/{condition}_{rep}_flagstats.txt", condition=CONDITIONS, rep=REPS)
 
 	
 rule fastqc:
@@ -32,13 +34,156 @@ rule fastqc:
 
 rule multiqc:
 	input:
-		html='results/{condition}rep{rep}_fastqc.html',
-		zip='results/{sample}rep{re}_fastqc.zip'
+		html=expand('results/{condition}{rep}_{read}_fastqc.html', 
+		condition=CONDITIONS,
+		rep=REPS,
+		read=READS
+		),
+		zip=expand('results/{condition}{rep}_{read}_fastqc.zip', 
+		condition=CONDITIONS,
+		rep=REPS,
+		read=READS
+		)
 	output:
 		multiqc = 'results/multiqc_report.html'
 	params:
 		outdir = 'results/'
+	conda:
+		'envs/multiqc_env.yml'
 	shell:
 		'''
 		multiqc results/ -o {params.outdir}
 		'''
+
+# Rule to download GRCh38 genome
+rule get_GRCh38:
+	output:
+		"materials/GRCh38.fa.gz"
+	shell:
+		'''
+		wget -O {output} https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/GRCh38.primary_assembly.genome.fa.gz"
+		'''
+
+## Rule to download GRCh38 GTF file
+#rule get_GRCh38_gtf:
+#	output:
+#		"materials/GRCh38.gtf.gz"
+#	params:
+#		ftp_path = "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.primary_assembly.annotation.gtf.gz"
+#	shell:
+#		'''
+#		wget -p {output} {params.ftp_path}
+#		'''
+#
+## rule to unzip gtf and fa
+#rule unzip:
+#	input:
+#		gtf = 'materials/GRCh38.gtf.gz',
+#		fa = 'materials/GRCh38.fa.gz'
+#	output:
+#		gtf = 'materials/GRCh38.gtf'
+#		fa = 'materials/GRCh38.fa'
+#	shell:
+#		'''
+#		gunzip -c {input.gtf} > {output.gtf}
+#		gunzip -c {input.fa} > {output.gtf}
+#		'''
+#
+## rule to build STAR index
+#rule star_build:
+#	input:
+#	output:
+#		Genome_index="results/GRCh38_star"
+#	params:
+#	conda:
+#		'envs/star_env.yml'
+#	threads: 16
+#	shell:
+#		'''
+#		'''
+#
+## Rule to perform STAR alignment
+#rule star_align:
+#	input:
+#		fastq1="materials/{condition}rep{rep}_R1.fastq.gz",
+#		fastq2="materials/{condition}rep{rep}_R2.fastq.gz",
+#		Genome_params="results/GRCh38_star/genomeParameters.txt";
+#	output:
+#		bam="results/{condition}rep{rep}.Aligned.bam"
+#	params:
+#		Genome_index="results/GRCh38_star"
+#		outdir="results/{condition}{rep}/"
+#	conda:
+#		'envs/star_env.yml'
+#	shell:
+#		"""
+#		STAR --genomeDir {params.Genome_index} --readFilesIn {input.fastq1} {input.fastq2} --readFilesCommand zcat --outSAMtype BAM Unsorted --outFileNamePrefix {params.outdir}
+#		"""
+
+rule bowtie2_build_gencode:
+	input:
+		fa = 'materials/GRCh38.fa.gz'
+	output:
+		bt2='results/GRCh38_bt2/GRCh38.1.bt2'
+	params:
+		index_dir = 'results/GRCh38_bt2/'
+	threads: 16
+	conda:
+		'envs/bowtie2_env.yml'
+	shell:
+		'''
+		# create a dir for the index if doesn't exist
+		dir={params.index_dir}
+
+		if [[ ! -e $dir ]]; then
+				mkdir $dir
+		fi
+		
+		# build index with defaults
+		bowtie2-build -f {input.fa} {params.index_dir}
+
+		echo 'Bowtie2 Index Built'
+		'''
+
+rule bowtie2_align:
+	input:
+		fastq1='materials/{condition}rep{rep}_R1.fastq.gz',
+		fastq2='materials/{condition}rep{rep}_R2.fastq.gz',
+		index = 'results/GRCh38_bt2'
+	output:
+		'results/{condition}_rep{rep}.bam'
+	threads: 16
+	params:
+		index = 'results/GRCh38_bt2'
+	conda:
+		'envs/bowtie2_env.yml'
+	shell:
+		'''
+		bowtie2 -x {params.index} -1 {input.fastq1} -2 {input.fastq2} | 
+		samtools view -b > {output}
+		'''
+
+# we wan to sort the alignments from bowtie2_align
+rule samtools_sort:
+	input:
+		'results/{condition}_{rep}.bam'
+	output:
+		'results/{condition}_{rep}.aligned.bam'
+	conda:
+		'envs/samtools_env.yml'
+	shell:
+		'''
+		samtools sort {input} -o {output}
+		rm {input}
+		'''
+
+# Rule to generate flagstat from aligned BAM files using samtools
+rule samtools_flagstat:
+	input:
+		bam="results/{condition}_{rep}.aligned.bam"
+	output:
+		flagstat="results/{condition}_{rep}_flagstats.txt"
+	conda:
+		'envs/samtools_env.yml'
+	shell:
+		"samtools flagstat {input.bam} > {output.flagstat}"
