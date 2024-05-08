@@ -94,31 +94,34 @@ rule build_hisat_index:
 	input:
 		fasta = 'materials/GRCh38.fa'  # Path to human genome FASTA file
 	output:
-		hisat_index = "results/GRCh38_hs2/GRCh38.1.ht2",  # Output file for the HISAT2 index
-		hisat_index_dir = directory("results/GRCh38_hs2")  # Output directory for the HISAT2 index
+		hisat_index = "results/GRCh38.1.ht2",  # Output file for the HISAT2 index
+	params:
+		hisat_index_prefix = ("results/GRCh38")  # Output directory for the HISAT2 index
 	conda:
 		'envs/hisat2_env.yml'
 	threads: 16
 	shell:
 		'''
 		mkdir -p {output.hisat_index_dir}
-		hisat2-build -f {input.fasta} {output.hisat_index_dir}/GRCh38
+		hisat2-build -f {input.fasta} {params.hisat_index_prefix}
 		'''
 
 # Define the rule for aligning paired-end FASTQ files to the HISAT2 index
 rule align_reads:
 	input:
-		index_prefix = "results/GRCh38_hs2",  # Prefix of the HISAT2 index
+		hisat_index_file = "results/GRCh38.1.hs2", # File of the HISAT2 index
 		fastq1='materials/{condition}rep{rep}_R1.fastq.gz', # Path to fwd reads
 		fastq2='materials/{condition}rep{rep}_R2.fastq.gz' # Path to rvs reads
 	output:
 		bam_file = "results/{condition}_rep{rep}.bam"  # Output path for the aligned BAM file
+	params:
+		index_prefix = "results/GRCh38"  # Prefix of the HISAT2 index
 	conda:
 		'envs/hisat2_env.yml'
 	threads: 16
 	shell:
 		'''
-		hisat2 -x {input.index_prefix} \
+		hisat2 -x {params.index_prefix} \
 			   -1 {input.fastq1} \
 			   -2 {input.fastq2} \
 		| samtools view -b > {output.bam_file}
