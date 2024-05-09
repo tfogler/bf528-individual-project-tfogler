@@ -34,6 +34,16 @@ From these alignments, we generated paired-end gene (exon) counts using VERSE v0
 After combining the counts from all 6 samples, we filtered out genes with zero counts. Then, we performed normalization and differential expression analysis using DESeq2 v1.44.0, comparing the two conditions.
 Finally, we performed a functional gene set enrichment analysis using FGSEA v1.28.0 to find functions associated with differentially expressed genes.
 
+Snakemake Workflow Summary
+```{r DAG}
+knitr::include_graphics("workflow_snake.png")
+```
+
+<!-- ![]("workflow_snake.png") -->
+
+## R-side Analysis
+
+
 ```{r DESEQ}
 #Read in verse_counts.tsv and display the head of the resulting tibble
 counts_df <- load_n_trim("results/verse_counts.tsv", row.names="gene")
@@ -46,11 +56,25 @@ cat("coldata: ")
 coldata
 
 # a warning about factors here is normal
-deseq_res <- run_deseq(counts_df, coldata, 10, "condition_CTL_vs_KO")
+dds <- run_deseq(counts_df, coldata, 10, "condition_CTL_vs_KO")
+deseq_res <- results(dds)
 cat("deseq results:")
 head(deseq_res)
 
 write.csv(deseq_res, file = "DESeq2_results.csv", quote = FALSE)
+```
+```{r histogram}
+# get log 2 fold change from DESEQ results
+log2FC <- deseq_res$log2FoldChange
+
+hist(log2FC, main="Distribution of log2FoldChange of DE genes", ylab = "Frequency of genes")
+```
+
+<!-- pca -->
+```{r pca plot}
+#Create and display your PCA plot
+pca_plot <- plot_pca(dds, "DESeq Counts PCA")
+pca_plot
 ```
 
 
