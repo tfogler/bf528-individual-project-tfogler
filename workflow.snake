@@ -168,12 +168,14 @@ rule generate_counts_with_verse:
 		bam_file = "results/{condition}_{rep}.aligned.bam",  # Path to the aligned BAM file
 		gtf = "materials/GRCh38.gtf"  # Path to the gene annotation file
 	output:
-		tsv_file = "results/{condition}_{rep}_counts.tsv"  # Output path for the TSV file
+		tsv_file = "results/{condition}_{rep}_counts.exon.txt"  # Output path for the TSV file
+	params:
+		tsv_prefix = "results/{condition}_{rep}_counts"  # Output path prefix for the tsv file
 	conda:
 		"envs/verse_env.yml"
 	shell:
 		"""
-		verse quant -a {input.gtf} -o {output.tsv_file} -z 0 \
+		verse -a {input.gtf} -o {params.tsv_prefix} -z 0 \
 			-t exon -g gene_id  {input.bam_file}
 		"""
 
@@ -181,7 +183,7 @@ rule generate_counts_with_verse:
 rule combine_verse_counts:
 	input:
 		# Paths to individual count files
-		count_files = expand("results/{condition}_{rep}_counts.tsv",
+		count_files = expand("results/{condition}_{rep}_counts.exon.txt",
 		  condition=CONDITIONS,
 		  rep=REPS)
 	output:
@@ -193,13 +195,13 @@ rule combine_verse_counts:
 		
 		# Iterate through input count files and read them into DataFrames
 		for count_file in input.count_files:
-			header = count_file.rstrip('_counts.tsv')
+			header = count_file.lstrip('results/').rstrip('_counts.exon.txt')
 			headers.append(header)
-			df = pd.read_csv(count_file, sep="\t", index_col=0)
+			df = pandas.read_csv(count_file, sep="\t", index_col=0)
 			dfs.append(df)
 		
 		# Concatenate all DataFrames along the columns (axis=1)
-		combined_df = pd.concat(dfs, axis=1, join="outer")
+		combined_df = pandas.concat(dfs, axis=1, join="outer")
 		combined_df.columns = headers
 		
 		# Write the combined DataFrame to the output file
