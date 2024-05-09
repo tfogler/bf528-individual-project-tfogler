@@ -7,32 +7,50 @@ output: html_document
 
 # Report
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, results='hide'}
 knitr::opts_chunk$set(echo = TRUE)
+source('main.R')
 ```
 
 ## Discussion
 
 **Remarks on the quality of sequencing reads:**
 
-- Reads are kinda alright
+- Reads are high quality in general
+  * No reads need to be removed
 - Only problems are the base sequence content and sequence duplication levels
   * sequence duplication is more worrisome since it could mean enrichment bias
   * on avg %s of reads after deduplication is 25%
   * a majority >50% also are duplicated 10x or more
   * base sequence content varies most at beginning of read
+- After samtools flagstats, all reads for each sample passed QC
 
 
 ## Methods
 
 First, mRNAseq samples were obtained corresponding to the wild-type/control (CTL) and knockout (KO) conditions, 3 CTL and 3 KO, and 2 reads. To ensure data quality, we performed initial quality control using FastQC v0.12.1.
 Next, we aligned the reads to the gencode human primary assembly genome (GRCh38, release 45) using HISAT2 v2.2.1 with paired-end alignment using default parameters.
-From these alignments, we generated gene counts using VERSE v0.1.5 and the gencode 45 primary assembly GTF.
-After combining the counts from all 6 samples, we filtered out genes with zero counts. Then, we performed normalization and differential expression analysis using DESeq2 v1.42.1, comparing the two conditions.
+From these alignments, we generated paired-end gene (exon) counts using VERSE v0.1.5 and the gencode 45 primary assembly GTF.
+After combining the counts from all 6 samples, we filtered out genes with zero counts. Then, we performed normalization and differential expression analysis using DESeq2 v1.44.0, comparing the two conditions.
 Finally, we performed a functional gene set enrichment analysis using FGSEA v1.28.0 to find functions associated with differentially expressed genes.
 
-```{r}
+```{r DESEQ}
+#Read in verse_counts.tsv and display the head of the resulting tibble
+counts_df <- load_n_trim("results/verse_counts.tsv", row.names="gene")
+head(counts_df)
 
+coldata <- data.frame(condition = rep(c("CTL", "KO"), each=3),
+                      rep = rep(c("rep1", "rep2", "rep3"), times=2))
+row.names(coldata) <- c("CTL_rep1", "CTL_rep2", "CTL_rep3", "KO_rep1", "KO_rep2", "KO_rep3")
+cat("coldata: ")
+coldata
+
+# a warning about factors here is normal
+deseq_res <- run_deseq(counts_df, coldata, 10, "condition_CTL_vs_KO")
+cat("deseq results:")
+head(deseq_res)
+
+write.csv(deseq_res, file = "DESeq2_results.csv", quote = FALSE)
 ```
 
 
