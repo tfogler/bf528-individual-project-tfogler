@@ -18,7 +18,7 @@ rule all:
 		expand("materials/{condition}{rep}_{reads}.fastq.gz", condition=CONDITIONS, rep=REPS,
 		 reads=READS),
 		"materials/GRCh38.gtf",
-		"verse_counts.tsv"
+		"results/verse_counts.tsv"
 
 	
 rule fastqc:
@@ -187,7 +187,7 @@ rule combine_verse_counts:
 		  condition=CONDITIONS,
 		  rep=REPS)
 	output:
-		combined_counts = "verse_counts.tsv"  # Output path for the combined counts file
+		combined_counts = "results/verse_counts.tsv"  # Output path for the combined counts file
 	run:
 		# Create an empty list to store DataFrames and sample names
 		dfs = []
