@@ -72,9 +72,15 @@ hist(log2FC, main="Distribution of log2FoldChange of DE genes", ylab = "Frequenc
 
 <!-- pca -->
 ```{r pca plot}
-#Create and display your PCA plot
+#Create and display PCA plot
 pca_plot <- plot_pca(dds, "DESeq Counts PCA")
 pca_plot
 ```
 
+```{r volcano plot}
+# GENERATE VOLCANO PLOT
+deseq_df <- as.data.frame(deseq_res)
+volcano <- volcano_plot(deseq_df, "log2FoldChange", "padj", alpha=0.05)
+volcano
+```
 
