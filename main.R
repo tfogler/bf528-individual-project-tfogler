@@ -10,12 +10,12 @@ if (!require("BiocManager", quietly = TRUE))
 # BiocManager::install(c("GenomicFeatures", "AnnotationDbi"))
 # BiocManager::install(c("DESeq2", "fgsea"))
 
-gsea_libs <- c("clusterProfiler", "org.Hs.eg.db", "AnnotationDbi")
-for (package in gsea_libs) {
-  BiocManager::install(gsea_libs)
-}
+gsea_libs <- c("clusterProfiler", "org.Hs.eg.db", "AnnotationDbi", "RDAVIDWebService")
+# for (package in gsea_libs) {
+#   BiocManager::install(gsea_libs)
+# }
 
-libs <- c("tidyverse", "BiocManager", "DESeq2", "fgsea", "biomaRt", "RColorBrewer")
+libs <- c(gsea_libs,c("tidyverse", "BiocManager", "DESeq2", "fgsea", "biomaRt", "RColorBrewer"))
 
 for (package in libs) {
   suppressPackageStartupMessages(require(package, 

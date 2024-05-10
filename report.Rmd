@@ -88,9 +88,11 @@ volcano
 deseq_res <- deseq_res %>% 
   na.omit()
 
-deseq_res <- deseq_res[order(-deseq_res$log2FoldChange),]
+ranking <- "stat"
+
+deseq_res <- deseq_res[order(-deseq_res[[ranking]]),]
 head(deseq_res)
-geneList <- deseq_res$log2FoldChange
+geneList <- deseq_res[[ranking]]
 names(geneList) <- str_extract(rownames(deseq_res), "^\\w*")
 gse <- clusterProfiler::gseGO(
   geneList = geneList,
@@ -107,6 +109,17 @@ gse <- clusterProfiler::gseGO(
 as.data.frame(gse)
 ```
 ```{r}
+# Plot the 1st most significant GS pathway
 clusterProfiler::gseaplot(gse, geneSetID = 1)
+```
+```{r}
+top10_genes <- deseq_df[base::order(deseq_df[['padj']]), ][1:10, ] %>% rownames() %>% str_extract("^\\w+")
+cat(top10_genes, sep = ', ')
+```
+
+```{r DAVID enrichment analsys}
+
+clusterProfiler::enrichDAVID(gene = top10_genes,
+                             idType="ENSEMBL_GENE_ID")
 ```
 
