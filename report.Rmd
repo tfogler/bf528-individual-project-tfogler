@@ -17,7 +17,7 @@ source('main.R')
 **Remarks on the quality of sequencing reads:**
 
 - Reads are high quality in general
-  * No reads need to be removed
+  * No samples or reads need to be removed
 - Only problems are the base sequence content and sequence duplication levels
   * sequence duplication is more worrisome since it could mean enrichment bias
   * on avg %s of reads after deduplication is 25%
@@ -32,7 +32,8 @@ First, mRNAseq samples were obtained corresponding to the wild-type/control (CTL
 Next, we aligned the reads to the gencode human primary assembly genome (GRCh38, release 45) using HISAT2 v2.2.1 with paired-end alignment using default parameters.
 From these alignments, we generated paired-end gene (exon) counts using VERSE v0.1.5 and the gencode 45 primary assembly GTF.
 After combining the counts from all 6 samples, we filtered out genes with zero counts. Then, we performed normalization and differential expression analysis using DESeq2 v1.44.0, comparing the two conditions.
-Finally, we performed a functional gene set enrichment analysis using FGSEA v1.28.0 to find functions associated with differentially expressed genes.
+Finally, we performed a functional gene set enrichment analysis using clusterProfiling v4.10.1 and org.Hs.eg.db Database to find functions
+associated with differentially expressed genes, and a GO analysis of our significant gene list with DAVID.
 
 Snakemake Workflow Summary
 ```{r DAG}
@@ -41,7 +42,8 @@ knitr::include_graphics("workflow_snake.png")
 
 <!-- ![]("workflow_snake.png") -->
 
-## R-side Analysis
+## Results
+### R-side Analysis
 
 
 ```{r DESEQ}
@@ -77,10 +79,27 @@ pca_plot <- plot_pca(dds, "DESeq Counts PCA")
 pca_plot
 ```
 
+This PCA plot shows the between-sample distance for the first two PCs. In it, the control replications are clustered fairly close together compared to the knockout replications. Two of the knockouts are very close to each other, but not the third, suggesting the third rep may be an outlier. 
+
+
 ```{r volcano plot}
+# Post-DE Analysis
+
+# FDR threshold: <0.05
+fdr_threshold <- 0.05 
+# Subset DE results based on FDR threshold
+deseq_res <- na.omit(deseq_res)
+significant_genes <- deseq_res[deseq_res[['padj']] < fdr_threshold,]
+# View the number of significant genes
+num_significant_genes <- nrow(significant_genes)
+print(paste("Number of significant genes at FDR <", fdr_threshold, ":", num_significant_genes))
+
+# Further analyze or visualize the significant genes as needed
+
 # GENERATE VOLCANO PLOT
 deseq_df <- as.data.frame(deseq_res)
 volcano <- volcano_plot(deseq_df, "log2FoldChange", "padj", alpha=0.05)
+ggsave("volcano1.svg", device='svg')
 volcano
 ```
 
@@ -104,6 +123,7 @@ gse <- clusterProfiler::gseGO(
 
 # List results of GSEA as a beautiful Table
 as.data.frame(gse)[1:3,] %>% knitr::kable()
+write.csv(gse, "GSE_res.csv", quote=F)
 ```
 
 ```{r GS plot n list}
@@ -124,4 +144,8 @@ cat(top10_genes, sep = ', ')
 david_res <- read.delim("DAVID.csv")
 as.data.frame(david_res) %>% knitr::kable()
 ```
+### 4. How similar are the results of both analyses? Are there notable differences?
 
+The results are shockingly different. DAVID GO analysis gave us genesets that have to do with plasma membrane, cytosol, and translation, 
+whereas the most significant pathways in GSEA are to do with ATP synthesis in the mitochondrion and organ development being downregulated and pathways
+to do with synaptic function being upregulated. Interestingly, you see a  more consistent pattern from the GSEA results. 

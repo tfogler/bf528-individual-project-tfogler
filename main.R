@@ -274,9 +274,9 @@ volcano_plot <-
     ) + ggplot2::theme(legend.position = "bottom"
     ) + scale_color_brewer(palette = "Set2"
     ) + ggplot2::labs(title="Plot of DE Results"
-    ) #+ ggplot2::coord_fixed(ratio = 0.045)
+    ) # + coord_cartesian(ylim = c(0, 275)) # change plot y scale
     
-    volcano <- update_labels(volcano, list(x = x_name, y = y_name))
+    volcano <- update_labels(volcano, list(x = x_name, y = paste0("-log10(", y_name,")")))
     
     return(volcano)
   }
