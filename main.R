@@ -10,6 +10,11 @@ if (!require("BiocManager", quietly = TRUE))
 # BiocManager::install(c("GenomicFeatures", "AnnotationDbi"))
 # BiocManager::install(c("DESeq2", "fgsea"))
 
+gsea_libs <- c("clusterProfiler", "org.Hs.eg.db", "AnnotationDbi")
+for (package in gsea_libs) {
+  BiocManager::install(gsea_libs)
+}
+
 libs <- c("tidyverse", "BiocManager", "DESeq2", "fgsea", "biomaRt", "RColorBrewer")
 
 for (package in libs) {
@@ -140,9 +145,9 @@ plot_pca <- function(dds, title="") {
 
 #' Acquire gene list
 #' 
-acquire_gene_list <- function(df) {
+acquire_gene_list <- function(deseq_res) {
   mart <- biomaRt::useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
-  genes <- df$genes
+  genes <- deseq_res %>% rownames()
   df$id <- NA
   G_list <- biomaRt::getBM(filters= "ensembl_gene_id", attributes= c("ensembl_gene_id",
                                                             "entrezgene", "description"),values=genes,mart= mart)

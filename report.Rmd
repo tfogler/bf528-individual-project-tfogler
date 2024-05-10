@@ -84,3 +84,29 @@ volcano <- volcano_plot(deseq_df, "log2FoldChange", "padj", alpha=0.05)
 volcano
 ```
 
+```{r GSEA analysis}
+deseq_res <- deseq_res %>% 
+  na.omit()
+
+deseq_res <- deseq_res[order(-deseq_res$log2FoldChange),]
+head(deseq_res)
+geneList <- deseq_res$log2FoldChange
+names(geneList) <- str_extract(rownames(deseq_res), "^\\w*")
+gse <- clusterProfiler::gseGO(
+  geneList = geneList,
+  ont = "BP",
+  keyType = "ENSEMBL",
+  OrgDb = "org.Hs.eg.db",
+  eps = 1e-10
+)
+
+
+```
+
+```{r}
+as.data.frame(gse)
+```
+```{r}
+clusterProfiler::gseaplot(gse, geneSetID = 1)
+```
+
