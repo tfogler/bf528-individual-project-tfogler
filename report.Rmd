@@ -102,24 +102,26 @@ gse <- clusterProfiler::gseGO(
   eps = 1e-10
 )
 
-
+# List results of GSEA as a beautiful Table
+as.data.frame(gse)[1:3,] %>% knitr::kable()
 ```
 
-```{r}
-as.data.frame(gse)
-```
-```{r}
+```{r GS plot n list}
 # Plot the 1st most significant GS pathway
 clusterProfiler::gseaplot(gse, geneSetID = 1)
-```
-```{r}
+
+# Get list of most expressed genes as characters
 top10_genes <- deseq_df[base::order(deseq_df[['padj']]), ][1:10, ] %>% rownames() %>% str_extract("^\\w+")
 cat(top10_genes, sep = ', ')
 ```
 
 ```{r DAVID enrichment analsys}
 
-clusterProfiler::enrichDAVID(gene = top10_genes,
-                             idType="ENSEMBL_GENE_ID")
+# clusterProfiler::enrichDAVID(gene = top10_genes,
+#                             idType="ENSEMBL_GENE_ID")
+
+# read in results from david website
+david_res <- read.delim("DAVID.csv")
+as.data.frame(david_res) %>% knitr::kable()
 ```
 
